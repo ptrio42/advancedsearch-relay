@@ -84,9 +84,9 @@ func main() {
 		relay.ServeHTTP(w, r)
 	})
 
-	fmt.Println("Listening on localhost:3366")
+	fmt.Println("Listening on localhost:3399")
 
-	http.ListenAndServe(":3366", nil)
+	http.ListenAndServe(":3399", nil)
 }
 
 func handleRange(matches []string, content string) nostr.Timestamp {
