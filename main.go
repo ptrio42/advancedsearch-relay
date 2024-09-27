@@ -47,6 +47,7 @@ func main() {
 
 			relay.QueryEvents = append(relay.QueryEvents, func(ctx context.Context, filter nostr.Filter) (chan *nostr.Event, error) {
 				filter.Authors = append(filter.Authors, pubkey)
+				filter.Kinds = []int{1}
 
 				fmt.Println("Filter", filter)
 
