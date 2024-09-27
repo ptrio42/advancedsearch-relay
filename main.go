@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/fiatjaf/khatru"
+	"github.com/fiatjaf/khatru/policies"
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip19"
 	"net/http"
@@ -22,10 +23,24 @@ func main() {
 	relay.Info.Description = "A relay to help you find your stuff on Nostr"
 	relay.Info.Icon = ""
 
+	relay.RejectFilter = append(relay.RejectFilter,
+		policies.NoEmptyFilters,
+	)
+
+	relay.RejectConnection = append(relay.RejectConnection,
+		policies.ConnectionRateLimiter(10, time.Minute*2, 30),
+	)
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		npub := strings.Trim(r.URL.Path, "/")
 
 		fmt.Println("Pubkey", npub)
+
+		ctx := context.Background()
+		searchRelay, err := nostr.RelayConnect(ctx, "wss://relay.nostr.band")
+		if err != nil {
+			panic(err)
+		}
 
 		if _, v, err := nip19.Decode(npub); err == nil {
 			pubkey := v.(string)
@@ -34,11 +49,6 @@ func main() {
 				filter.Authors = append(filter.Authors, pubkey)
 
 				fmt.Println("Filter", filter)
-
-				relay, err := nostr.RelayConnect(ctx, "wss://relay.nostr.band")
-				if err != nil {
-					panic(err)
-				}
 
 				before := `before:(\d{4})(-(\d{2}))?(-(\d{2}))?`
 				beforeRegex := regexp.MustCompile(before)
@@ -69,7 +79,7 @@ func main() {
 
 				fmt.Println(filter)
 
-				sub, err := relay.Subscribe(ctx, []nostr.Filter{filter})
+				sub, err := searchRelay.Subscribe(ctx, []nostr.Filter{filter})
 				if err != nil {
 					panic(err)
 				}
